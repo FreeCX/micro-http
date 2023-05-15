@@ -1,0 +1,36 @@
+div.center {
+    display: block;
+    margin: auto;
+    width: 50%;
+    text-align: center;
+}
+
+div.item {
+    margin: 2em auto 2em auto;
+}
+
+span.current {
+    font-size: 100px;
+    font-weight: bold;
+}
+
+label {
+    font-size: 16px;
+}
+
+h1 {
+    font-size: 24px;
+    font-weight: normal;
+}
+
+input {
+    font-size: 16px;
+    max-width: 100px;
+    text-align: center;
+}
+
+button {
+    font-size: large;
+    min-width: 200px;
+    min-height: 50px;
+}
