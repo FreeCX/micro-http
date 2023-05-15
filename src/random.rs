@@ -19,9 +19,9 @@ impl Random {
     }
 
     pub fn generate(&mut self) -> u32 {
-        self.init ^= self.init << 17;
-        self.init ^= self.init >> 5;
         self.init ^= self.init << 13;
+        self.init ^= self.init >> 17;
+        self.init ^= self.init << 5;
         self.init
     }
 
