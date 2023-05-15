@@ -18,8 +18,8 @@ fn file(request: http::HttpData) -> http::HttpData {
 
 fn api(request: http::HttpData) -> http::HttpData {
     let data = json::deserialize(&request.content.unwrap());
-    let min_value: u32 = data.get("min").unwrap().parse().unwrap();
-    let max_value: u32 = data.get("max").unwrap().parse().unwrap();
+    let min_value: i32 = data.get("min").unwrap().parse().unwrap();
+    let max_value: i32 = data.get("max").unwrap().parse().unwrap();
 
     let mut random = random::Random::new();
     let result = random.in_range(min_value, max_value);

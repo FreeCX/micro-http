@@ -25,7 +25,7 @@ impl Random {
         self.init
     }
 
-    pub fn in_range(&mut self, min: u32, max: u32) -> u32 {
-        self.generate() % (max - min) + min
+    pub fn in_range(&mut self, min: i32, max: i32) -> i32 {
+        self.generate() as i32 % (max - min) + min
     }
 }
