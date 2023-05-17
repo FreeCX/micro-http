@@ -31,8 +31,8 @@ fn api(request: http::HttpData) -> http::HttpData {
 
 fn main() {
     let mut app = app::App::new();
-    app.bind(http::HttpMethod::GET, "/index", index);
-    app.bind(http::HttpMethod::GET, "/static/", file);
-    app.bind(http::HttpMethod::POST, "/api/", api);
+    app.bind(http::HttpMethod::GET, "/index", &index);
+    app.bind(http::HttpMethod::GET, "/static/", &file);
+    app.bind(http::HttpMethod::POST, "/api/", &api);
     app.run("127.0.0.1:8000");
 }
