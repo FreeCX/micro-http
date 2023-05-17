@@ -13,17 +13,17 @@ pub fn serialize(data: HashMap<String, String>) -> http::HttpData {
     response
 }
 
-pub fn deserialize(data: &[u8]) -> HashMap<String, String> {
+pub fn deserialize(data: &[u8]) -> Option<HashMap<String, String>> {
     let mut result = HashMap::new();
 
-    let data = String::from_utf8(data.to_vec()).unwrap();
+    let data = String::from_utf8(data.to_vec()).ok()?;
     for item in data.replace(['{', '}'], " ").split(',') {
-        let index = item.find(':').unwrap();
+        let index = item.find(':')?;
         let (key, value) = item.split_at(index);
         let key = key.replace('"', " ").trim().to_string();
         let value = value[1..].replace('"', " ").trim().to_string();
         result.insert(key, value);
     }
 
-    result
+    Some(result)
 }

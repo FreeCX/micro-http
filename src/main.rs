@@ -16,22 +16,41 @@ fn file(request: http::HttpData) -> http::HttpData {
     file::response(&format!("./site{}", request.url))
 }
 
+// TODO: optimize
 fn api(request: http::HttpData) -> http::HttpData {
-    let data = json::deserialize(&request.content.unwrap());
-    let min_value: i32 = data.get("min").unwrap().parse().unwrap();
-    let max_value: i32 = data.get("max").unwrap().parse().unwrap();
+    let data = match request.content.and_then(|c| json::deserialize(&c)) {
+        Some(dict) => dict,
+        None => {
+            let mut response = http::HttpData::new();
+            response.status_code = status::StatusCode::BadRequest;
+            return response;
+        }
+    };
 
-    let mut random = random::Random::new();
-    let result = random.in_range(min_value, max_value);
-    let mut data = HashMap::new();
-    data.insert("result".to_string(), result.to_string());
+    let min_value = data.get("min").cloned().and_then(|d| d.parse().ok());
+    let max_value = data.get("max").cloned().and_then(|d| d.parse().ok());
 
-    json::serialize(data)
+    match (min_value, max_value) {
+        (Some(minv), Some(maxv)) => {
+            let mut random = random::Random::new();
+            let result = random.in_range(minv, maxv);
+
+            let mut data = HashMap::new();
+            data.insert("result".to_string(), result.to_string());
+
+            json::serialize(data)
+        }
+        _ => {
+            let mut response = http::HttpData::new();
+            response.status_code = status::StatusCode::BadRequest;
+            response
+        }
+    }
 }
 
 fn main() {
     let mut app = app::App::new();
-    app.bind(http::HttpMethod::GET, "/index", &index);
+    app.bind(http::HttpMethod::GET, "/", &index);
     app.bind(http::HttpMethod::GET, "/static/", &file);
     app.bind(http::HttpMethod::POST, "/api/", &api);
     app.run("127.0.0.1:8000");

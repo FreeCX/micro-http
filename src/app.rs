@@ -30,6 +30,25 @@ impl App {
         self.routes.push(Route { url: url.to_string(), method, func: Box::new(func) })
     }
 
+    fn route(&self, url: &str, method: http::HttpMethod) -> Option<&Route> {
+        let sublength =
+            |text: &str, subtext: &str| text.chars().zip(subtext.chars()).take_while(|(a, b)| a == b).count();
+        let mut founded = None;
+        let mut max_len = 0;
+
+        for route in &self.routes {
+            if url.starts_with(&route.url) && route.method == method {
+                let curr_len = sublength(&route.url, url);
+                if curr_len > max_len {
+                    founded = Some(route);
+                    max_len = curr_len;
+                }
+            }
+        }
+
+        founded
+    }
+
     // TODO: реализовать Keep-Alive соединение
     fn handle_client(&self, mut stream: TcpStream) {
         let mut request = http::HttpData::new();
@@ -38,13 +57,7 @@ impl App {
 
         println!(">>> {:?} {}\n{}", request.method.unwrap(), request.url, request.render_headers());
 
-        let response = match self
-            .routes
-            .iter()
-            .filter(|x| request.url.starts_with(&x.url) && x.method == request.method.unwrap())
-            .take(1)
-            .next()
-        {
+        let response = match self.route(&request.url, request.method.unwrap()) {
             Some(route) => (route.func)(request),
             None => {
                 let mut response = http::HttpData::new();
