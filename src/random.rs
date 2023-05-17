@@ -26,7 +26,7 @@ impl Random {
     }
 
     pub fn in_range(&mut self, min: i32, max: i32) -> i32 {
-        let value = self.generate() % (max - min).abs() as u32;
+        let value = self.generate() % (max - min).unsigned_abs();
         value as i32 + min
     }
 }
