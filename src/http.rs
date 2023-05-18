@@ -5,8 +5,16 @@ use std::{collections::HashMap, io::Read, net::SocketAddr};
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum HttpMethod {
+    CONNECT,
+    DELETE,
     GET,
+    HEAD,
+    OPTIONS,
+    PATCH,
     POST,
+    PUT,
+    TRACE,
+    UNKNOWN,
 }
 
 pub struct HttpData {
@@ -36,9 +44,10 @@ impl HttpData {
         }
     }
 
-    pub fn parse<R: Read>(&mut self, r: &mut R) {
-        self.parse_header(r);
-        self.parse_content(r);
+    pub fn parse<R: Read>(&mut self, r: &mut R) -> Option<()> {
+        self.parse_header(r)?;
+        self.parse_content(r)?;
+        Some(())
     }
 
     pub fn add_header<K, V>(&mut self, key: K, value: V)
@@ -49,12 +58,11 @@ impl HttpData {
         self.headers.insert(key.to_string(), value.to_string());
     }
 
-    // TODO: нормально распарсить заголовок
-    fn parse_header<R: Read>(&mut self, r: &mut R) {
-        let buffer = read::read_until_crlf(r).unwrap();
+    fn parse_header<R: Read>(&mut self, r: &mut R) -> Option<()> {
+        let buffer = read::read_until_crlf(r)?;
         let mut iterator = buffer.split("\r\n");
 
-        let header: Vec<_> = iterator.next().unwrap().split(' ').collect();
+        let header: Vec<_> = iterator.next()?.split(' ').collect();
         self.method = Some(HttpMethod::from(header[0]));
         self.url = header[1].to_string();
 
@@ -62,20 +70,23 @@ impl HttpData {
             if line.trim().is_empty() {
                 continue;
             }
-            let index = line.find(':').unwrap();
+            let index = line.find(':')?;
             let (key, value) = line.split_at(index);
             self.headers.insert(key.trim().to_string(), value[1..].trim().to_string());
         }
+
+        Some(())
     }
 
-    fn parse_content<R: Read>(&mut self, r: &mut R) {
+    fn parse_content<R: Read>(&mut self, r: &mut R) -> Option<()> {
         if self.headers.contains_key("Content-Length") {
-            let size: usize = self.headers.get("Content-Length").unwrap().parse().unwrap();
+            let size: usize = self.headers.get("Content-Length")?.parse().ok()?;
             let mut content = String::with_capacity(size);
             let r = Read::by_ref(r);
             let _ = r.take(size as u64).read_to_string(&mut content);
             self.content = Some(content.into());
         }
+        Some(())
     }
 
     pub fn render_headers(&self) -> String {
@@ -87,20 +98,23 @@ impl HttpData {
     }
 
     pub fn render_content(&self) -> Vec<u8> {
-        if let Some(data) = &self.content {
-            data.clone()
-        } else {
-            Vec::new()
-        }
+        self.content.clone().unwrap_or_default()
     }
 }
 
 impl From<&str> for HttpMethod {
     fn from(value: &str) -> Self {
         match value {
+            "CONNECT" => HttpMethod::CONNECT,
+            "DELETE" => HttpMethod::DELETE,
             "GET" => HttpMethod::GET,
+            "HEAD" => HttpMethod::HEAD,
+            "OPTIONS" => HttpMethod::OPTIONS,
+            "PATCH" => HttpMethod::PATCH,
             "POST" => HttpMethod::POST,
-            method => panic!("method {method} not supported"),
+            "PUT" => HttpMethod::PUT,
+            "TRACE" => HttpMethod::TRACE,
+            _ => HttpMethod::UNKNOWN,
         }
     }
 }
