@@ -7,9 +7,8 @@ pub fn serialize(data: HashMap<String, String>) -> http::HttpData {
     content.push('}');
 
     let mut response = http::HttpData::new();
-    response.add_header("Content-Type", "application/json");
-    response.add_header("Content-Length", content.len());
-    response.content = Some(content.into_bytes());
+    response.add_header("content-type", "application/json");
+    response.set_content(content);
     response
 }
 

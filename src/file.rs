@@ -19,9 +19,8 @@ pub fn response(filename: &str) -> http::HttpData {
 
     match fs::read(filename) {
         Ok(content) => {
-            response.add_header("Content-Type", detect_content_type(filename));
-            response.add_header("Content-Length", content.len());
-            response.content = Some(content);
+            response.add_header("content-type", detect_content_type(filename));
+            response.set_content(content);
         }
         Err(_) => {
             response.status_code = status::StatusCode::NotFound;

@@ -18,6 +18,7 @@ pub enum HttpMethod {
 }
 
 pub struct HttpData {
+    // тут вообще multimap должен быть, но как-то пофиг пока
     pub headers: HashMap<String, String>,
     pub content: Option<Vec<u8>>,
     pub addr: Option<SocketAddr>,
@@ -55,7 +56,14 @@ impl HttpData {
         K: fmt::Display,
         V: fmt::Display,
     {
-        self.headers.insert(key.to_string(), value.to_string());
+        // пусть все ключи будут в нижнем регистре
+        self.headers.insert(key.to_string().to_lowercase(), value.to_string());
+    }
+
+    pub fn set_content<I: Into<Vec<u8>>>(&mut self, content: I) {
+        let content = content.into();
+        self.add_header("content-length", content.len());
+        self.content = Some(content);
     }
 
     fn parse_header<R: Read>(&mut self, r: &mut R) -> Option<()> {
@@ -72,15 +80,15 @@ impl HttpData {
             }
             let index = line.find(':')?;
             let (key, value) = line.split_at(index);
-            self.headers.insert(key.trim().to_string(), value[1..].trim().to_string());
+            self.headers.insert(key.trim().to_string().to_lowercase(), value[1..].trim().to_string());
         }
 
         Some(())
     }
 
     fn parse_content<R: Read>(&mut self, r: &mut R) -> Option<()> {
-        if self.headers.contains_key("Content-Length") {
-            let size: usize = self.headers.get("Content-Length")?.parse().ok()?;
+        if self.headers.contains_key("content-length") {
+            let size: usize = self.headers.get("content-length")?.parse().ok()?;
             let mut content = String::with_capacity(size);
             let r = Read::by_ref(r);
             let _ = r.take(size as u64).read_to_string(&mut content);

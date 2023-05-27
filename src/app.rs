@@ -12,18 +12,14 @@ struct Route {
 }
 
 pub struct App {
+    host: String,
+    port: u16,
     routes: Vec<Route>,
 }
 
-impl Default for App {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl App {
-    pub fn new() -> App {
-        App { routes: Vec::new() }
+    pub fn new(host: &str, port: u16) -> App {
+        App { routes: Vec::new(), host: host.to_string(), port }
     }
 
     pub fn bind(&mut self, method: http::HttpMethod, url: &str, func: &'static RouteFunc) {
@@ -49,7 +45,6 @@ impl App {
         founded
     }
 
-    // TODO: implement Keep-Alive connection
     fn handle_client(&self, mut stream: TcpStream) -> Option<()> {
         let mut request = http::HttpData::new();
         request.addr = stream.peer_addr().ok();
@@ -63,7 +58,7 @@ impl App {
         println!(">>> {:?} {}\n{}", method, request.url, request.render_headers());
 
         // ignore all methods except GET and POST
-        let response = if method == http::HttpMethod::GET || method == http::HttpMethod::POST {
+        let mut response = if method == http::HttpMethod::GET || method == http::HttpMethod::POST {
             match self.route(&request.url, method) {
                 Some(route) => (route.func)(request),
                 None => {
@@ -79,6 +74,10 @@ impl App {
             response
         };
 
+        // add server info
+        response.add_header("host", format!("{}:{}", self.host, self.port));
+        response.add_header("server", "micro-http/0.1");
+
         println!("<<< HTTP/1.1 {}\n{}", response.status_code, response.render_headers());
         write!(stream, "HTTP/1.1 {}\r\n{}\r\n", response.status_code, response.render_headers()).ok()?;
         if let Some(content) = response.content {
@@ -88,9 +87,10 @@ impl App {
         Some(())
     }
 
-    pub fn run(&self, host: &str) -> Option<()> {
-        let listener = TcpListener::bind(host).ok()?;
-        println!(">>> run server @ {host}");
+    pub fn run(&self) -> Option<()> {
+        let addr = format!("{}:{}", self.host, self.port);
+        let listener = TcpListener::bind(&addr).ok()?;
+        println!(">>> run server @ {addr}");
         for stream in listener.incoming().flatten() {
             self.handle_client(stream)?;
         }
