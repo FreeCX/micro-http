@@ -54,24 +54,16 @@ impl App {
             println!(">>> incoming connection from {}:{}", addr.ip(), addr.port());
         }
 
-        let method = request.method?;
-        println!(">>> {:?} {}\n{}", method, request.url, request.render_headers());
+        println!(">>> {:?} {}\n{}", request.method, request.url, request.render_headers());
 
         // ignore all methods except GET and POST
-        let mut response = if method == http::HttpMethod::GET || method == http::HttpMethod::POST {
-            match self.route(&request.url, method) {
-                Some(route) => (route.func)(request),
-                None => {
-                    let mut response = http::HttpData::new();
-                    response.status_code = status::StatusCode::NotFound;
-                    response
-                }
-            }
+        let mut response = if request.method == http::HttpMethod::GET || request.method == http::HttpMethod::POST {
+            self.route(&request.url, request.method)
+                .and_then(|r| Some((r.func)(request)))
+                .unwrap_or(http::HttpData::from(status::StatusCode::NotFound))
         } else {
-            println!("!!! method {method:?} not supported");
-            let mut response = http::HttpData::new();
-            response.status_code = status::StatusCode::MethodNotAllowed;
-            response
+            println!("!!! method {:?} not supported", request.method);
+            http::HttpData::from(status::StatusCode::MethodNotAllowed)
         };
 
         // add server info

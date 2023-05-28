@@ -23,7 +23,7 @@ pub struct HttpData {
     pub content: Option<Vec<u8>>,
     pub addr: Option<SocketAddr>,
     pub url: String,
-    pub method: Option<HttpMethod>,
+    pub method: HttpMethod,
     pub status_code: status::StatusCode,
 }
 
@@ -40,9 +40,15 @@ impl HttpData {
             content: None,
             url: String::new(),
             addr: None,
-            method: None,
+            method: HttpMethod::UNKNOWN,
             status_code: status::StatusCode::Ok,
         }
+    }
+
+    pub fn from(status: status::StatusCode) -> HttpData {
+        let mut data = HttpData::new();
+        data.status_code = status;
+        data
     }
 
     pub fn parse<R: Read>(&mut self, r: &mut R) -> Option<()> {
@@ -71,7 +77,7 @@ impl HttpData {
         let mut iterator = buffer.split("\r\n");
 
         let header: Vec<_> = iterator.next()?.split(' ').collect();
-        self.method = Some(HttpMethod::from(header[0]));
+        self.method = HttpMethod::from(header[0]);
         self.url = header[1].to_string();
 
         for line in iterator {
