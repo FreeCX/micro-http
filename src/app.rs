@@ -59,7 +59,7 @@ impl App {
         // ignore all methods except GET and POST
         let mut response = if request.method == http::HttpMethod::GET || request.method == http::HttpMethod::POST {
             self.route(&request.url, request.method)
-                .and_then(|r| Some((r.func)(request)))
+                .map(|r| (r.func)(request))
                 .unwrap_or(http::HttpData::from(status::StatusCode::NotFound))
         } else {
             println!("!!! method {:?} not supported", request.method);
