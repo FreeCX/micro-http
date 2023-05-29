@@ -56,15 +56,10 @@ impl App {
 
         println!(">>> {:?} {}\n{}", request.method, request.url, request.render_headers());
 
-        // ignore all methods except GET and POST
-        let mut response = if request.method == http::HttpMethod::GET || request.method == http::HttpMethod::POST {
-            self.route(&request.url, request.method)
-                .map(|r| (r.func)(request))
-                .unwrap_or(http::HttpData::from(status::StatusCode::NotFound))
-        } else {
-            println!("!!! method {:?} not supported", request.method);
-            http::HttpData::from(status::StatusCode::MethodNotAllowed)
-        };
+        let mut response = self
+            .route(&request.url, request.method)
+            .map(|r| (r.func)(request))
+            .unwrap_or(http::HttpData::from(status::StatusCode::NotFound));
 
         // add server info
         response.add_header("host", format!("{}:{}", self.host, self.port));
@@ -81,11 +76,14 @@ impl App {
 
     pub fn run(&self) -> Option<()> {
         let addr = format!("{}:{}", self.host, self.port);
+
         let listener = TcpListener::bind(&addr).ok()?;
         println!(">>> run server @ {addr}");
+
         for stream in listener.incoming().flatten() {
             self.handle_client(stream)?;
         }
+
         Some(())
     }
 }
