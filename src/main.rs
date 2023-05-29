@@ -22,8 +22,7 @@ fn api(request: http::HttpData) -> http::HttpData {
         let minv = data.get("min").cloned().and_then(|d| d.parse().ok())?;
         let maxv = data.get("max").cloned().and_then(|d| d.parse().ok())?;
 
-        let mut random = random::Random::new();
-        let result = random.in_range(minv, maxv);
+        let result = random::Random::new().in_range(minv, maxv);
 
         let mut data = HashMap::new();
         data.insert("result".to_string(), result.to_string());
@@ -33,7 +32,7 @@ fn api(request: http::HttpData) -> http::HttpData {
 
     match process(request) {
         Some(r) => r,
-        None => http::HttpData::from(status::StatusCode::BadRequest),
+        None => http::HttpData::from_status(status::StatusCode::BadRequest),
     }
 }
 

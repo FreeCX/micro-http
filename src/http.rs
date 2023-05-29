@@ -45,9 +45,16 @@ impl HttpData {
         }
     }
 
-    pub fn from(status: status::StatusCode) -> HttpData {
+    pub fn from_status(status: status::StatusCode) -> HttpData {
+        HttpData { status_code: status, ..Default::default() }
+    }
+
+    pub fn from_content<M: Into<String>, C: Into<Vec<u8>>>(mime_type: M, content: C) -> HttpData {
         let mut data = HttpData::new();
-        data.status_code = status;
+        let content = content.into();
+        data.add_header("content-type", mime_type.into());
+        data.add_header("content-length", content.len());
+        data.content = Some(content);
         data
     }
 
@@ -64,12 +71,6 @@ impl HttpData {
     {
         // пусть все ключи будут в нижнем регистре
         self.headers.insert(key.to_string().to_lowercase(), value.to_string());
-    }
-
-    pub fn set_content<I: Into<Vec<u8>>>(&mut self, content: I) {
-        let content = content.into();
-        self.add_header("content-length", content.len());
-        self.content = Some(content);
     }
 
     fn parse_header<R: Read>(&mut self, r: &mut R) -> Option<()> {
@@ -109,10 +110,6 @@ impl HttpData {
             buf.push_str(&format!("{k}: {v}\r\n"));
         }
         buf
-    }
-
-    pub fn render_content(&self) -> Vec<u8> {
-        self.content.clone().unwrap_or_default()
     }
 }
 

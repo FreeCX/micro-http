@@ -27,8 +27,10 @@ impl App {
     }
 
     fn route(&self, url: &str, method: http::HttpMethod) -> Option<&Route> {
-        let sublength =
-            |text: &str, subtext: &str| text.chars().zip(subtext.chars()).take_while(|(a, b)| a == b).count();
+        fn sublength(text: &str, subtext: &str) -> usize {
+            text.chars().zip(subtext.chars()).take_while(|(a, b)| a == b).count()
+        }
+
         let mut founded = None;
         let mut max_len = 0;
 
@@ -59,7 +61,7 @@ impl App {
         let mut response = self
             .route(&request.url, request.method)
             .map(|r| (r.func)(request))
-            .unwrap_or(http::HttpData::from(status::StatusCode::NotFound));
+            .unwrap_or(http::HttpData::from_status(status::StatusCode::NotFound));
 
         // add server info
         response.add_header("host", format!("{}:{}", self.host, self.port));

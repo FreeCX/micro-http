@@ -2,14 +2,11 @@ use crate::http;
 use std::collections::HashMap;
 
 pub fn serialize(data: HashMap<String, String>) -> http::HttpData {
-    let mut content = data.iter().map(|(k, v)| format!("\"{k}\":\"{v}\"")).collect::<Vec<String>>().join(",");
+    let mut content = data.into_iter().map(|(k, v)| format!("\"{k}\":\"{v}\"")).collect::<Vec<String>>().join(",");
     content.insert(0, '{');
     content.push('}');
 
-    let mut response = http::HttpData::new();
-    response.add_header("content-type", "application/json");
-    response.set_content(content);
-    response
+    http::HttpData::from_content("application/json", content)
 }
 
 pub fn deserialize(data: &[u8]) -> Option<HashMap<String, String>> {

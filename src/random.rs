@@ -13,11 +13,12 @@ impl Default for Random {
 
 impl Random {
     pub fn new() -> Random {
-        let start = SystemTime::now();
-        let since_epoch = start.duration_since(UNIX_EPOCH).unwrap_or(Duration::from_secs(42));
+        // в качестве seed будем использовать текущее время
+        let since_epoch = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or(Duration::from_secs(42));
         Random { init: since_epoch.as_secs() as u32 }
     }
 
+    // в качестве ГПСЧ нам хватит xor shift
     pub fn generate(&mut self) -> u32 {
         self.init ^= self.init << 13;
         self.init ^= self.init >> 17;
