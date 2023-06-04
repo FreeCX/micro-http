@@ -3,12 +3,12 @@ use crate::status;
 use std::io::Write;
 use std::net::{TcpListener, TcpStream};
 
-type RouteFunc = dyn Fn(http::HttpData) -> http::HttpData;
+type RouteFunc = fn(http::HttpData) -> http::HttpData;
 
 struct Route {
     url: String,
     method: http::HttpMethod,
-    func: Box<RouteFunc>,
+    func: RouteFunc,
 }
 
 pub struct App {
@@ -22,8 +22,8 @@ impl App {
         App { routes: Vec::new(), host: host.to_string(), port }
     }
 
-    pub fn bind(&mut self, method: http::HttpMethod, url: &str, func: &'static RouteFunc) {
-        self.routes.push(Route { url: url.to_string(), method, func: Box::new(func) })
+    pub fn bind(&mut self, method: http::HttpMethod, url: &str, func: RouteFunc) {
+        self.routes.push(Route { url: url.to_string(), method, func })
     }
 
     fn route(&self, url: &str, method: http::HttpMethod) -> Option<&Route> {
