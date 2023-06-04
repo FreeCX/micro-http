@@ -1,6 +1,9 @@
+use std::fs;
+
 use crate::http;
 use crate::status;
-use std::fs;
+use http::HttpData;
+use status::StatusCode;
 
 fn detect_content_type(filename: &str) -> String {
     // в идеале тут нужно определять mime-type файла по его содержимому, но нам хватит и этого набора
@@ -16,9 +19,9 @@ fn detect_content_type(filename: &str) -> String {
     .to_string()
 }
 
-pub fn response(filename: &str) -> http::HttpData {
+pub fn response(filename: &str) -> HttpData {
     match fs::read(filename) {
-        Ok(content) => http::HttpData::from_content(detect_content_type(filename), content),
-        Err(_) => http::HttpData::from_status(status::StatusCode::NotFound),
+        Ok(content) => HttpData::from_content(detect_content_type(filename), content),
+        Err(_) => HttpData::from_status(StatusCode::NotFound),
     }
 }

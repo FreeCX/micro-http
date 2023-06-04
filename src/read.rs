@@ -1,6 +1,6 @@
 use std::io::Read;
 
-pub fn read_until_crlf<R: Read>(r: &mut R) -> Option<String> {
+pub fn until_crlf<R: Read>(r: &mut R) -> Option<String> {
     let mut buf = Vec::new();
 
     for b in r.bytes() {

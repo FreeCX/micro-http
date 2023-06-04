@@ -1,7 +1,9 @@
-use crate::read;
-use crate::status;
 use std::fmt;
 use std::{collections::HashMap, io::Read, net::SocketAddr};
+
+use crate::read;
+use crate::status;
+use status::StatusCode;
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum HttpMethod {
@@ -24,7 +26,7 @@ pub struct HttpData {
     pub addr: Option<SocketAddr>,
     pub url: String,
     pub method: HttpMethod,
-    pub status_code: status::StatusCode,
+    pub status_code: StatusCode,
 }
 
 impl Default for HttpData {
@@ -41,11 +43,11 @@ impl HttpData {
             url: String::new(),
             addr: None,
             method: HttpMethod::UNKNOWN,
-            status_code: status::StatusCode::Ok,
+            status_code: StatusCode::Ok,
         }
     }
 
-    pub fn from_status(status: status::StatusCode) -> HttpData {
+    pub fn from_status(status: StatusCode) -> HttpData {
         HttpData { status_code: status, ..Default::default() }
     }
 
@@ -74,7 +76,7 @@ impl HttpData {
     }
 
     fn parse_header<R: Read>(&mut self, r: &mut R) -> Option<()> {
-        let buffer = read::read_until_crlf(r)?;
+        let buffer = read::until_crlf(r)?;
         let mut iterator = buffer.split("\r\n");
 
         let header: Vec<_> = iterator.next()?.split(' ').collect();
@@ -115,17 +117,18 @@ impl HttpData {
 
 impl From<&str> for HttpMethod {
     fn from(value: &str) -> Self {
+        use HttpMethod::*;
         match value {
-            "CONNECT" => HttpMethod::CONNECT,
-            "DELETE" => HttpMethod::DELETE,
-            "GET" => HttpMethod::GET,
-            "HEAD" => HttpMethod::HEAD,
-            "OPTIONS" => HttpMethod::OPTIONS,
-            "PATCH" => HttpMethod::PATCH,
-            "POST" => HttpMethod::POST,
-            "PUT" => HttpMethod::PUT,
-            "TRACE" => HttpMethod::TRACE,
-            _ => HttpMethod::UNKNOWN,
+            "CONNECT" => CONNECT,
+            "DELETE" => DELETE,
+            "GET" => GET,
+            "HEAD" => HEAD,
+            "OPTIONS" => OPTIONS,
+            "PATCH" => PATCH,
+            "POST" => POST,
+            "PUT" => PUT,
+            "TRACE" => TRACE,
+            _ => UNKNOWN,
         }
     }
 }

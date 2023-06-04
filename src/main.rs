@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 pub mod app;
 pub mod file;
 pub mod http;
@@ -8,23 +6,21 @@ pub mod random;
 pub mod read;
 pub mod status;
 
-fn index(_request: http::HttpData) -> http::HttpData {
-    file::response("./site/index.html")
-}
+use app::App;
+use http::{HttpData, HttpMethod};
+use json::SimpleJson;
+use random::Random;
+use status::StatusCode;
 
-fn file(request: http::HttpData) -> http::HttpData {
-    file::response(&format!("./site{}", request.url))
-}
-
-fn api(request: http::HttpData) -> http::HttpData {
-    fn process(request: http::HttpData) -> Option<http::HttpData> {
+fn api(request: HttpData) -> HttpData {
+    fn process(request: HttpData) -> Option<HttpData> {
         let data = request.content.and_then(|c| json::deserialize(&c))?;
         let minv = data.get("min").cloned().and_then(|d| d.parse().ok())?;
         let maxv = data.get("max").cloned().and_then(|d| d.parse().ok())?;
 
-        let result = random::Random::new().in_range(minv, maxv);
+        let result = Random::new().in_range(minv, maxv);
 
-        let mut data = HashMap::new();
+        let mut data = SimpleJson::new();
         data.insert("result".to_string(), result.to_string());
 
         Some(json::serialize(data))
@@ -32,14 +28,14 @@ fn api(request: http::HttpData) -> http::HttpData {
 
     match process(request) {
         Some(r) => r,
-        None => http::HttpData::from_status(status::StatusCode::BadRequest),
+        None => HttpData::from_status(StatusCode::BadRequest),
     }
 }
 
 fn main() {
-    let mut app = app::App::new("127.0.0.1", 8000);
-    app.bind(http::HttpMethod::GET, "/", index);
-    app.bind(http::HttpMethod::GET, "/static/", file);
-    app.bind(http::HttpMethod::POST, "/api/", api);
+    let mut app = App::new("127.0.0.1", 8000);
+    app.bind("/", HttpMethod::GET, |_| file::response("./site/index.html"));
+    app.bind("/static/", HttpMethod::GET, |r| file::response(&format!("./site{}", r.url)));
+    app.bind("/api/", HttpMethod::POST, api);
     app.run();
 }
