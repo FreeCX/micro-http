@@ -1,16 +1,11 @@
-pub mod app;
-pub mod file;
-pub mod http;
-pub mod json;
-pub mod random;
-pub mod read;
-pub mod status;
+extern crate micro_http;
 
-use app::App;
-use http::{HttpData, HttpMethod};
-use json::SimpleJson;
-use random::Random;
-use status::StatusCode;
+use micro_http::app::App;
+use micro_http::file;
+use micro_http::http::{HttpData, HttpMethod};
+use micro_http::json::{self, SimpleJson};
+use micro_http::random::Random;
+use micro_http::status::StatusCode;
 
 fn api(request: HttpData) -> HttpData {
     fn process(request: HttpData) -> Option<HttpData> {
