@@ -1,11 +1,12 @@
 use std::fmt;
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum StatusCode {
-    Ok,               // 200
-    BadRequest,       // 400
-    NotFound,         // 404
-    MethodNotAllowed, // 405
-    ServerError,      // 500
+    Ok = 200,
+    BadRequest = 400,
+    NotFound = 404,
+    MethodNotAllowed = 405,
+    ServerError = 500,
 }
 
 impl fmt::Display for StatusCode {
@@ -13,13 +14,14 @@ impl fmt::Display for StatusCode {
         use StatusCode::*;
         write!(
             f,
-            "{}",
+            "{} {}",
+            *self as u16,
             match self {
-                Ok => "200 OK",
-                BadRequest => "400 Bad Request",
-                NotFound => "404 Not Found",
-                MethodNotAllowed => "405 Method Not Allowed",
-                ServerError => "500 Internal Server Error",
+                Ok => "OK",
+                BadRequest => "Bad Request",
+                NotFound => "Not Found",
+                MethodNotAllowed => "Method Not Allowed",
+                ServerError => "Internal Server Error",
             }
         )
     }
