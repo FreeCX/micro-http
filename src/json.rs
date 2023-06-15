@@ -1,16 +1,15 @@
 use std::collections::HashMap;
 
-use crate::http;
-use http::HttpData;
+use crate::http::Data;
 
 pub type SimpleJson = HashMap<String, String>;
 
-pub fn serialize(data: SimpleJson) -> HttpData {
+pub fn serialize(data: SimpleJson) -> Data {
     let mut content = data.into_iter().map(|(k, v)| format!("\"{k}\":\"{v}\"")).collect::<Vec<String>>().join(",");
     content.insert(0, '{');
     content.push('}');
 
-    HttpData::from_content("application/json", content)
+    Data::from_content("application/json", content)
 }
 
 pub fn deserialize(data: &[u8]) -> Option<SimpleJson> {

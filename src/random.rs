@@ -1,14 +1,8 @@
-use std::time::Duration;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+#[derive(Default, Clone, Copy)]
 pub struct Random {
     init: u32,
-}
-
-impl Default for Random {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl Random {

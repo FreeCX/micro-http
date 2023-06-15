@@ -1,7 +1,8 @@
 use std::fmt;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 pub enum StatusCode {
+    #[default]
     Ok = 200,
     BadRequest = 400,
     NotFound = 404,

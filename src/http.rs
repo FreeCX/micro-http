@@ -1,12 +1,12 @@
 use std::fmt;
 use std::{collections::HashMap, io::Read, net::SocketAddr};
 
+use crate::error::FrameworkError;
 use crate::read;
-use crate::status;
-use status::StatusCode;
+use crate::status::StatusCode;
 
-#[derive(Eq, PartialEq, Copy, Clone, Debug)]
-pub enum HttpMethod {
+#[derive(Eq, PartialEq, Copy, Clone, Debug, Default)]
+pub enum Method {
     CONNECT,
     DELETE,
     GET,
@@ -16,43 +16,32 @@ pub enum HttpMethod {
     POST,
     PUT,
     TRACE,
+    #[default]
     UNKNOWN,
 }
 
-pub struct HttpData {
+#[derive(Default)]
+pub struct Data {
     // тут вообще multimap должен быть, но как-то пофиг пока
     pub headers: HashMap<String, String>,
     pub content: Option<Vec<u8>>,
     pub addr: Option<SocketAddr>,
     pub url: String,
-    pub method: HttpMethod,
+    pub method: Method,
     pub status_code: StatusCode,
 }
 
-impl Default for HttpData {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl HttpData {
-    pub fn new() -> HttpData {
-        HttpData {
-            headers: HashMap::new(),
-            content: None,
-            url: String::new(),
-            addr: None,
-            method: HttpMethod::UNKNOWN,
-            status_code: StatusCode::Ok,
-        }
+impl Data {
+    pub fn new() -> Data {
+        Data::default()
     }
 
-    pub fn from_status(status: StatusCode) -> HttpData {
-        HttpData { status_code: status, ..Default::default() }
+    pub fn from_status(status: StatusCode) -> Data {
+        Data { status_code: status, ..Default::default() }
     }
 
-    pub fn from_content<M: Into<String>, C: Into<Vec<u8>>>(mime_type: M, content: C) -> HttpData {
-        let mut data = HttpData::new();
+    pub fn from_content<M: Into<String>, C: Into<Vec<u8>>>(mime_type: M, content: C) -> Data {
+        let mut data = Data::new();
         let content = content.into();
         data.add_header("content-type", mime_type.into());
         data.add_header("content-length", content.len());
@@ -60,10 +49,10 @@ impl HttpData {
         data
     }
 
-    pub fn parse<R: Read>(&mut self, r: &mut R) -> Option<()> {
+    pub fn parse<R: Read>(&mut self, r: &mut R) -> Result<(), FrameworkError> {
         self.parse_header(r)?;
         self.parse_content(r)?;
-        Some(())
+        Ok(())
     }
 
     pub fn add_header<K, V>(&mut self, key: K, value: V)
@@ -75,35 +64,40 @@ impl HttpData {
         self.headers.insert(key.to_string().to_lowercase(), value.to_string());
     }
 
-    fn parse_header<R: Read>(&mut self, r: &mut R) -> Option<()> {
+    fn parse_header<R: Read>(&mut self, r: &mut R) -> Result<(), FrameworkError> {
         let buffer = read::until_crlf(r)?;
         let mut iterator = buffer.split("\r\n");
 
-        let header: Vec<_> = iterator.next()?.split(' ').collect();
-        self.method = HttpMethod::from(header[0]);
+        let header: Vec<_> = iterator.next().ok_or(FrameworkError::HeaderParse)?.split(' ').collect();
+        self.method = Method::from(header[0]);
         self.url = header[1].to_string();
 
         for line in iterator {
             if line.trim().is_empty() {
                 continue;
             }
-            let index = line.find(':')?;
+            let index = line.find(':').ok_or(FrameworkError::HeaderParse)?;
             let (key, value) = line.split_at(index);
             self.headers.insert(key.trim().to_string().to_lowercase(), value[1..].trim().to_string());
         }
 
-        Some(())
+        Ok(())
     }
 
-    fn parse_content<R: Read>(&mut self, r: &mut R) -> Option<()> {
+    fn parse_content<R: Read>(&mut self, r: &mut R) -> Result<(), FrameworkError> {
         if self.headers.contains_key("content-length") {
-            let size: usize = self.headers.get("content-length")?.parse().ok()?;
+            let size: usize = self
+                .headers
+                .get("content-length")
+                .ok_or(FrameworkError::HeaderData)?
+                .parse()
+                .map_err(|_| FrameworkError::HeaderData)?;
             let mut content = String::with_capacity(size);
             let r = Read::by_ref(r);
             let _ = r.take(size as u64).read_to_string(&mut content);
             self.content = Some(content.into());
         }
-        Some(())
+        Ok(())
     }
 
     pub fn render_headers(&self) -> String {
@@ -115,9 +109,9 @@ impl HttpData {
     }
 }
 
-impl From<&str> for HttpMethod {
+impl From<&str> for Method {
     fn from(value: &str) -> Self {
-        use HttpMethod::*;
+        use Method::*;
         match value {
             "CONNECT" => CONNECT,
             "DELETE" => DELETE,
