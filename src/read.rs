@@ -7,8 +7,7 @@ pub fn until_crlf<R: Read>(r: &mut R) -> Result<String, FrameworkError> {
     let mut buf = Vec::new();
 
     for b in r.bytes() {
-        let b = b?;
-        buf.push(b);
+        buf.push(b?);
         if buf.ends_with(b"\r\n\r\n") {
             break;
         }

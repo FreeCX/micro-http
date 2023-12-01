@@ -78,7 +78,7 @@ impl Data {
             }
             let index = line.find(':').ok_or(FrameworkError::HeaderParse)?;
             let (key, value) = line.split_at(index);
-            self.headers.insert(key.trim().to_string().to_lowercase(), value[1..].trim().to_string());
+            self.add_header(key.trim(), value[1..].trim());
         }
 
         Ok(())
@@ -86,15 +86,15 @@ impl Data {
 
     fn parse_content<R: Read>(&mut self, r: &mut R) -> Result<(), FrameworkError> {
         if self.headers.contains_key("content-length") {
-            let size: usize = self
+            let size: u64 = self
                 .headers
                 .get("content-length")
                 .ok_or(FrameworkError::HeaderData)?
                 .parse()
                 .map_err(|_| FrameworkError::HeaderData)?;
-            let mut content = String::with_capacity(size);
+            let mut content = String::with_capacity(size as usize);
             let r = Read::by_ref(r);
-            let _ = r.take(size as u64).read_to_string(&mut content);
+            let _ = r.take(size).read_to_string(&mut content);
             self.content = Some(content.into());
         }
         Ok(())
