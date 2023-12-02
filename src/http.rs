@@ -76,8 +76,7 @@ impl Data {
             if line.trim().is_empty() {
                 continue;
             }
-            let index = line.find(':').ok_or(FrameworkError::HeaderParse)?;
-            let (key, value) = line.split_at(index);
+            let (key, value) = line.split_once(':').ok_or(FrameworkError::HeaderParse)?;
             self.add_header(key.trim(), value[1..].trim());
         }
 
